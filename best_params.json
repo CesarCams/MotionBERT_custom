@@ -1,0 +1,8 @@
+{
+    "model": "SVM",
+    "params": {
+        "C": 10,
+        "kernel": "rbf"
+    },
+    "accuracy": 0.8346007604562737
+}

@@ -1,0 +1,12 @@
+{
+    "model": "MLP",
+    "params": {
+        "activation": "relu",
+        "alpha": 0.001,
+        "hidden_layer_sizes": [
+            100,
+            50
+        ]
+    },
+    "accuracy": 0.8530805687203792
+}
