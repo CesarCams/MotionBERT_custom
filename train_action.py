@@ -145,7 +145,7 @@ def train_with_config(args, opts):
           'persistent_workers': True
     }
     testloader_params = {
-          'batch_size': args.batch_size,
+          'batch_size': args.batch_size, 
           'shuffle': False,
           'num_workers': 2,
           'pin_memory': True,
@@ -474,6 +474,7 @@ def train_basic_class():
 
 if __name__ == "__main__":
     opts = parse_args()
+    print(opts)
     args = get_config(opts.config)
-    train_with_config(args, opts) 
+    #train_with_config(args, opts) 
     #train_basic_class()
