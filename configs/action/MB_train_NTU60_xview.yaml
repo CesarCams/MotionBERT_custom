@@ -26,8 +26,8 @@ dropout_ratio: 0.5
 # Data
 dataset: ntu60_hrnet
 data_split: xview
-clip_len: 243
-action_classes: 60
+clip_len: 50 # Changed from 243
+action_classes: 4 # Changed from 60
 
 # Augmentation
 random_move: True

@@ -18,10 +18,11 @@ class SurfActionDataset(Dataset):
     def load_all_data(self):
         all_data = []
         for video_path in self.video_paths:
-            class_name = video_path.split('_')[0]
-            dir_path = f"{self.data_root}/{class_name}/{video_path}"
+            #class_name = video_path.split('_')[0]
+            #dir_path = f"{self.data_root}/{class_name}/{video_path}"
+            dir_path = f"{self.data_root}/{video_path}"
             json_path = f"{dir_path}/keypoints_xyz.json"
-            pkl_path = f"{dir_path}/input_2D/keypoints.npz"
+            #pkl_path = f"{dir_path}/input_2D/keypoints.npz"
             # Load 3D keypoints from JSON
             with open(json_path, 'r') as f:
                 json_data = json.load(f)
@@ -30,11 +31,13 @@ class SurfActionDataset(Dataset):
             label_name = json_data["label"]
             label_id = self.label_to_index(label_name)
 
-            npz_data = np.load(pkl_path)
+            #npz_data = np.load(pkl_path)
             # If your data is under a named key:
-            kp2d = npz_data['reconstruction'][0]
 
-            T = min(len(frames), len(kp2d))
+            #kp2d = npz_data['reconstruction'][0]
+
+            #T = min(len(frames), len(kp2d))
+            T = len(frames)
             #print(f"Frames: {len(frames)}, KP2D: {len(kp2d[0])}")
 
             #print(f"Clip len: {self.clip_len}")

@@ -312,7 +312,7 @@ def train_with_config(args, opts):
                 }, best_chk_path)
 
     if opts.evaluate:
-        test_loss, test_top1, test_top5 = validate(test_loader, model, criterion)
+        test_loss, test_top1, test_top5 = validate(test_loader, model, criterion,device)
         print('Loss {loss:.4f} \t'
               'Acc@1 {top1:.3f} \t'
               'Acc@5 {top5:.3f} \t'.format(loss=test_loss, top1=test_top1, top5=test_top5))
@@ -547,6 +547,7 @@ if __name__ == "__main__":
     # print("Device:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU")
 
     train_with_config(args, opts)
+
     #train_basic_class()
     # with open("lib/data/splits/test_list_0.5.txt") as f:
     #     list_unshuffled = [line.strip() for line in f]
