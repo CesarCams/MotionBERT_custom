@@ -15,7 +15,7 @@ def make_seq(json_path):
     with open(json_path, 'r') as f:
         json_data = json.load(f)
 
-    frames = json_data["threed_pose"]
+    frames = json_data["frames"]
 
     pose3d_clip = []
 
@@ -24,7 +24,8 @@ def make_seq(json_path):
         kp_3d = np.array([[frame[str(j)]["x"],
                         frame[str(j)]["y"],
                         frame[str(j)]["z"]] for j in range(17)])  # (17,3)
-
+        max_val = np.max(kp_3d, axis=0, keepdims=True)
+        kp_3d = kp_3d / max_val
         pose3d_clip.append(kp_3d)
 
     pose3d_clip = np.stack(pose3d_clip)  # (T, 17, 3)
