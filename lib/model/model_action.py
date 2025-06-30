@@ -2,7 +2,8 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-    
+import numpy as np
+
 class ActionHeadClassification(nn.Module):
     def __init__(self, dropout_ratio=0., dim_rep=512, num_classes=60, num_joints=17, hidden_dim=2048):
         super(ActionHeadClassification, self).__init__()
@@ -48,9 +49,10 @@ class ActionHeadEmbed(nn.Module):
         return feat
 
 class ActionNet(nn.Module):
-    def __init__(self, backbone, dim_rep=512, num_classes=60, dropout_ratio=0., version='class', hidden_dim=2048, num_joints=17):
+    def __init__(self, backbone, dim_rep=512, num_classes=60, dropout_ratio=0., version='class', hidden_dim=2048, num_joints=17,clip_len=50):
         super(ActionNet, self).__init__()
         self.backbone = backbone
+        self.clip_len = clip_len
         self.feat_J = num_joints
         if version=='class':
             self.head = ActionHeadClassification(dropout_ratio=dropout_ratio, dim_rep=dim_rep, num_classes=num_classes, num_joints=num_joints)
@@ -64,12 +66,25 @@ class ActionNet(nn.Module):
             Input: (N, M x T x 17 x 3) 
         '''
         N, M, T, J, C = x.shape
+
+        if T >= self.clip_len:
+            selected_indices = np.linspace(0, T - 1, self.clip_len).astype(int)
+        else:
+            # Use all available frames and repeat last frame as needed
+            selected_indices = list(range(T)) + [T - 1] * (self.clip_len - T)
+
+        #print("Shaoe before selection:", x.shape)
+
+        x = x[:, :, selected_indices, :, :]  # Select frames based on the indices
+        #print("Shape after selection:", x.shape)
+        N, M, T, J, C = x.shape
         x = x.reshape(N*M, T, J, C)        
         feat = self.backbone.get_representation(x)
         feat = feat.reshape([N, M, T, self.feat_J, -1])      # (N, M, T, J, C)
         out = self.head(feat)
         return out
-    
+
+
     def extract_embedding(self, x):
         N, M, T, J, C = x.shape
         x = x.reshape(N * M, T, J, C)                   # (N*M, T, J, C)

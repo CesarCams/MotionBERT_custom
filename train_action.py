@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('-r', '--resume', default='', type=str, metavar='FILENAME', help='checkpoint to resume (file name)')
     parser.add_argument('-e', '--evaluate', default='', type=str, metavar='FILENAME', help='checkpoint to evaluate (file name)')
     parser.add_argument('-freq', '--print_freq', default=100)
+    parser.add_argument('-dr','--data_root', default='lib/data/processed_videos', type=str, metavar='PATH', help='root directory of the dataset')
     parser.add_argument('-ms', '--selection', default='latest_epoch.bin', type=str, metavar='FILENAME', help='checkpoint to finetune (file name)')
     opts = parser.parse_args()
     return opts
@@ -153,29 +154,7 @@ def train_with_config(args, opts):
           'prefetch_factor': 4,
           'persistent_workers': True
     }
-    # data_path = 'lib/data/action/%s.pkl' % args.dataset
-    # ntu60_xsub_train = NTURGBD(data_path=data_path, data_split=args.data_split+'_train', n_frames=args.clip_len, random_move=args.random_move, scale_range=args.scale_range_train)
-    # ntu60_xsub_val = NTURGBD(data_path=data_path, data_split=args.data_split+'_val', n_frames=args.clip_len, random_move=False, scale_range=args.scale_range_test)
-
-    # print(f"\n🔍 Dataset Info")
-    # print(f"Train set size: {len(ntu60_xsub_train)}")
-    # print(f"Val set size: {len(ntu60_xsub_val)}")
-
-    # # Fetch one sample
-    # sample_input, sample_label = ntu60_xsub_train[0]
-
-    # print(f"\n✅ Sample 0 input shape: {sample_input.shape}")  # Should be (2, T, 17, 3) or (M, T, 17, 4)
-    # print(f"✅ Sample 0 label: {sample_label} ({type(sample_label)})")
-
-    # # Optional: print a few numbers
-    # print(f"\n🎯 First joint of first frame (person 1): {sample_input[0, 0, 0]}")  # (x, y, z) or (x, y, z, conf)
-
-    # # If shape is (M, T, J, 4), print all persons
-    # if sample_input.ndim == 4:
-    #     for m in range(sample_input.shape[0]):
-    #         print(f"Person {m} joint 0 @ t=0:", sample_input[m, 0, 0])    
-    # return 
-    # Load list of training and validation video names
+    
     with open("lib/data/splits/train_list_0.5.txt") as f:
         list_unshuffled = [line.strip() for line in f]
         train_list = random.sample(list_unshuffled,k=len(list_unshuffled))
@@ -190,19 +169,17 @@ def train_with_config(args, opts):
     test_list = full_test_list[split_index:]
 
     # Create datasets
-    train_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=train_list, clip_len=args.clip_len)
-    val_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=val_list, clip_len=args.clip_len)
-    test_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=test_list, clip_len=args.clip_len)
+
+    data_root = args.data_root
+    train_dataset = SurfActionDataset(data_root=data_root, split_list=train_list, clip_len=args.clip_len)
+    val_dataset = SurfActionDataset(data_root=data_root, split_list=val_list, clip_len=args.clip_len)
+    test_dataset = SurfActionDataset(data_root=data_root, split_list=test_list, clip_len=args.clip_len)
 
     # Create loaders
     train_loader = DataLoader(train_dataset, **trainloader_params)
     val_loader = DataLoader(val_dataset, **testloader_params)  # Usually same params as test
     test_loader = DataLoader(test_dataset, **testloader_params)
 
-
-    # train_loader = DataLoader(ntu60_xsub_train, **trainloader_params)
-    # test_loader = DataLoader(ntu60_xsub_val, **testloader_params)
-        
     chk_filename = os.path.join(opts.checkpoint, "latest_epoch.bin")
     if os.path.exists(chk_filename):
         opts.resume = chk_filename
@@ -312,16 +289,17 @@ def train_with_config(args, opts):
                 }, best_chk_path)
 
     if opts.evaluate:
-        test_loss, test_top1, test_top5 = validate(test_loader, model, criterion,device)
-        print('Loss {loss:.4f} \t'
-              'Acc@1 {top1:.3f} \t'
-              'Acc@5 {top5:.3f} \t'.format(loss=test_loss, top1=test_top1, top5=test_top5))
-    
-    print("Perf on training set : ")
-    evaluate_model(model,train_loader,device,name='conf_matrix_train.png')
-    print("Perf on test set : ")
-    evaluate_model(model,test_loader,device,name='conf_matrix_test.png')
+        print("Perf on training set : ")
+        evaluate_model(model,train_loader,device,name='conf_matrix_train.png')
+        print("Perf on test set : ")
+        evaluate_model(model,test_loader,device,name='conf_matrix_test.png')
 
+        # print("Evaluating model...")
+        # test_loss, test_top1, test_top5 = validate(test_loader, model, criterion,device)
+        # print('Loss {loss:.4f} \t'
+        #       'Acc@1 {top1:.3f} \t'
+        #       'Acc@5 {top5:.3f} \t'.format(loss=test_loss, top1=test_top1, top5=test_top5))
+    
 def train_basic_class():
     trainloader_params = {
           'batch_size': 8,
@@ -361,17 +339,6 @@ def train_basic_class():
     val_loader = DataLoader(val_dataset, **testloader_params)  # Usually same params as test
     test_loader = DataLoader(test_dataset, **testloader_params)
 
-    # model_backbone = load_backbone(args)
-
-    # chk_filename = os.path.join(opts.pretrained, opts.selection)
-    # print('Loading backbone', chk_filename)
-    # checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)['model_pos']
-    # model_backbone = load_pretrained_weights(model_backbone, checkpoint)
-
-    # opts = parse_args()
-    # args = get_config(opts.config)
-    # model = ActionNet(backbone=model_backbone, dim_rep=args.dim_rep, num_classes=args.action_classes, dropout_ratio=args.dropout_ratio, version=args.model_version, hidden_dim=args.hidden_dim, num_joints=args.num_joints)
-    
 
     X_train, y_train = [], []
     X_test, y_test = [], []
@@ -506,12 +473,12 @@ def evaluate_model(model, test_loader, device, class_names=None,name='conf_matri
     if class_names is None:
         class_names = [0,1,2,3]
     with torch.no_grad():
-        for batch in test_loader:
+        for batch in tqdm(test_loader):
             # Unpack batch (assuming (input, label) structure)
             inputs, labels = batch
             inputs = inputs.to(device)
             labels = labels.to(device)
-
+            print(f"Input shape: {inputs.shape}, Labels shape: {labels.shape}")
             outputs = model(inputs)
             preds = torch.argmax(outputs, dim=1)
 
@@ -541,88 +508,4 @@ if __name__ == "__main__":
     print(opts)
     args = get_config(opts.config)
 
-    # print("CUDA available:", torch.cuda.is_available())
-    # print("CUDA version:", torch.version.cuda)
-    # print("PyTorch version:", torch.__version__)
-    # print("Device:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU")
-
     train_with_config(args, opts)
-
-    #train_basic_class()
-    # with open("lib/data/splits/test_list_0.5.txt") as f:
-    #     list_unshuffled = [line.strip() for line in f]
-    #     full_test_list = random.sample(list_unshuffled,k=len(list_unshuffled))
-    #     #print(full_test_list)
-    # with open("lib/data/splits/train_list_0.5.txt") as f:
-    #     train_list = [line.strip() for line in f]
-
-    # # Split test_list into validation and test (50/50)
-    # split_index = len(full_test_list) // 2
-    # val_list = full_test_list[:split_index]
-    # test_list = full_test_list[split_index:]
-
-    # testloader_params = {
-    #       'batch_size': 8,
-    #       'shuffle': False,
-    #       'num_workers': 8,
-    #       'pin_memory': True,
-    #       'prefetch_factor': 4,
-    #       'persistent_workers': True
-    # }
-
-    # trainloader_params= {
-    #       'batch_size': 8,
-    #       'shuffle': True,
-    #       'num_workers': 8,
-    #       'pin_memory': True,
-    #       'prefetch_factor': 4,
-    #       'persistent_workers': True
-    # }
-
-    # # Create datasets
-    # train_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=train_list, clip_len=args.clip_len)
-    # val_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=val_list, clip_len=args.clip_len)
-    # test_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=test_list, clip_len=args.clip_len)
-
-    # # Create loaders
-    # train_loader = DataLoader(train_dataset, **trainloader_params)
-    # val_loader = DataLoader(val_dataset, **testloader_params)  # Usually same params as test
-    # test_loader = DataLoader(test_dataset, **testloader_params)
-
-
-    # model_backbone = load_backbone(args)
-    # if args.finetune:
-    #     if opts.resume or opts.evaluate:
-    #         pass
-    #     else:
-    #         chk_filename = os.path.join(opts.pretrained, opts.selection)
-    #         print('Loading backbone', chk_filename)
-    #         checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)['model_pos']
-    #         model_backbone = load_pretrained_weights(model_backbone, checkpoint)
-    # if args.partial_train:
-    #     model_backbone = partial_train_layers(model_backbone, args.partial_train)
-    # model = ActionNet(backbone=model_backbone, dim_rep=args.dim_rep, num_classes=args.action_classes, dropout_ratio=args.dropout_ratio, version=args.model_version, hidden_dim=args.hidden_dim, num_joints=args.num_joints)
-    # criterion = torch.nn.CrossEntropyLoss()
-    # # if torch.backends.mps.is_available():
-    # #     device = torch.device("cpu")
-    # #     print("Using CPU anyway")
-    # # else:
-    # #     device = torch.device("cpu")
-    # #     print("Using CPU")
-    
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(f"Using device: {device}")
-    # model = model.to(device)
-    # criterion = criterion.to(device)
-    # # train_loader = DataLoader(ntu60_xsub_train, **trainloader_params)
-    # # test_loader = DataLoader(ntu60_xsub_val, **testloader_params)
-        
-    # chk_filename = os.path.join(opts.checkpoint, "latest_epoch.bin")
-    # if os.path.exists(chk_filename):
-    #     opts.resume = chk_filename
-    # if opts.resume or opts.evaluate:
-    #     chk_filename = opts.evaluate if opts.evaluate else opts.resume
-    #     print('Loading checkpoint', chk_filename)
-    #     checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)
-    #     model.load_state_dict(checkpoint['model'], strict=True)
-    # evaluate_model(model,test_loader,device)

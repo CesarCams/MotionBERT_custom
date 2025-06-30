@@ -18,9 +18,9 @@ class SurfActionDataset(Dataset):
     def load_all_data(self):
         all_data = []
         for video_path in self.video_paths:
-            #class_name = video_path.split('_')[0]
-            #dir_path = f"{self.data_root}/{class_name}/{video_path}"
-            dir_path = f"{self.data_root}/{video_path}"
+            class_name = video_path.split('_')[0]
+            dir_path = f"{self.data_root}/{class_name}/{video_path}"
+            #dir_path = f"{self.data_root}/{video_path}"
             json_path = f"{dir_path}/keypoints_xyz.json"
             #pkl_path = f"{dir_path}/input_2D/keypoints.npz"
             # Load 3D keypoints from JSON
@@ -63,7 +63,7 @@ class SurfActionDataset(Dataset):
 
             for i in selected_indices:
                 # 2D
-                kp_2d = kp2d[i]  # (17, 3)
+                #kp_2d = kp2d[i]  # (17, 3)
                 #print(f"KP2D shape: {kp_2d.shape}")
                 
                 #kp_2d = np.pad(kp_2d, ((0,0),(0,1)))  # to (17,3)
@@ -74,10 +74,10 @@ class SurfActionDataset(Dataset):
                                 frame[str(j)]["y"],
                                 frame[str(j)]["z"]] for j in range(17)])  # (17,3)
 
-                pose2d_clip.append(kp_2d)
+                #pose2d_clip.append(kp_2d)
                 pose3d_clip.append(kp_3d)
 
-            pose2d_clip = np.stack(pose2d_clip)  # (T, 17, 3)
+            #pose2d_clip = np.stack(pose2d_clip)  # (T, 17, 3)
             pose3d_clip = np.stack(pose3d_clip)  # (T, 17, 3)
             dummy_person = np.zeros_like(pose3d_clip) # (T, 17, 3)
             combined = np.stack([pose3d_clip, dummy_person], axis=0)  # (2, T, 17, 3)

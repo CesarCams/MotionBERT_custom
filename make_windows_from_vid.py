@@ -3,11 +3,7 @@ import json
 import pickle
 import numpy as np
 from torch.utils.data import Dataset
-
-
-#dir_path = "/Users/cesarcamusemschwiller/Desktop/Surfeye/code/models_trial/MotionBERT_custom/lib/data/processed_videos/360/360_3/"
-json_path = "/Users/cesarcamusemschwiller/Desktop/Surfeye/code/models_trial/MotionBERT_custom/lib/data/processed_videos/b_2022-11-05-12-20-48_558/keypoints_xyz.json"
-window_size = 10
+import argparse
 
 def make_seq(json_path):
 #pkl_path = f"{dir_path}/input_2D/keypoints.npz"
@@ -65,7 +61,12 @@ window_size = 50
 stride = 3
 if __name__=="__main__":
 
-    json_path = '/Users/cesarcamusemschwiller/Desktop/Surfeye/code/models_trial/MotionAGFormer_custom/samples_json/2025-05-23-17-10-46_17.json'
+    parser = argparse.ArgumentParser(description="Process JSON path for keypoints.")
+    parser.add_argument("--json_path", type=str, required=True, help="Path to the JSON file containing keypoints.")
+    parser.add_argument("--window_size", type=int, default=window_size, help="Size of the sliding window.")
+    parser.add_argument("--stride", type=int, default=stride, help="Stride for the sliding window.")
+    args = parser.parse_args()
+    json_path = args.json_path
     combined = make_seq(json_path)
 
     windows = sliding_window_pose_sequences(combined, window_size, stride=1)
