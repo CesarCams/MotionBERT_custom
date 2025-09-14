@@ -519,9 +519,9 @@ def evaluate_model(model, test_loader, device, class_names=None,name='conf_matri
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    opts = parse_args()
     #print(opts)
-    #args = get_config(opts.config)
+    args = get_config(opts.config)
 
-    # train_with_config(args, opts)
+    train_with_config(args, opts)
     train_basic_class()

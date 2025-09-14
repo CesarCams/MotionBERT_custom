@@ -1,5 +1,5 @@
 # General  
-finetune: False
+finetune: True
 partial_train: null
 
 # Traning 
@@ -22,12 +22,12 @@ att_fuse: True
 num_joints: 17
 hidden_dim: 2048
 dropout_ratio: 0.5
-
+data_root : dataset.json
 # Data
 dataset: ntu60_hrnet
 data_split: xview
 clip_len: 50 # Changed from 243
-action_classes: 4 # Changed from 60
+action_classes: 2 # Changed from 60
 
 # Augmentation
 random_move: True

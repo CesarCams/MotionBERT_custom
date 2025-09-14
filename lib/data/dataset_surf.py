@@ -154,10 +154,10 @@ class SurfActionDatasetV2(Dataset):
                 pose3d_clip.append(kp_3d)
 
             pose3d_clip = np.stack(pose3d_clip)  # (T, 17, 3)
-            #dummy_person = np.zeros_like(pose3d_clip)
-            #combined = np.stack([pose3d_clip, dummy_person], axis=0)  # (2, T, 17, 3)
+            dummy_person = np.zeros_like(pose3d_clip)
+            combined = np.stack([pose3d_clip, dummy_person], axis=0)  # (2, T, 17, 3)
             print("second label_id : ",label_id)
-            all_data.append((pose3d_clip, label_id))
+            all_data.append((combined, label_id))
 
         print(f"Loaded {len(all_data)} samples for split ")
         return all_data

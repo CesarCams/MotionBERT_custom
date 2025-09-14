@@ -27,7 +27,8 @@ dropout_ratio: 0.5
 dataset: ntu60_hrnet
 data_split: xsub
 clip_len: 243
-action_classes: 60
+action_classes: 2
+data_root : dataset.json
 
 # Augmentation
 random_move: True
