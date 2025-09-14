@@ -102,3 +102,128 @@ class SurfActionDataset(Dataset):
     def __getitem__(self, idx):
         input_tensor, label = self.samples[idx]
         return torch.tensor(input_tensor, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
+
+class SurfActionDatasetV2(Dataset):
+    def __init__(self, json_path, split_list, clip_len=50, grouping=None):
+        """
+        json_path: path to dataset.json
+        split_list: list of sample indices (train/val/test split)
+        clip_len: number of frames per clip
+        grouping: dict mapping fine labels -> grouped labels (optional)
+        """
+        self.json_path = json_path
+        self.clip_len = clip_len
+        #self.grouping = grouping or {}
+        self.samples = self.load_split_data(split_list)
+
+
+    def load_split_data(self, split_list):
+        with open(self.json_path, "r") as f:
+            dataset = json.load(f)
+
+        all_data = []
+        for idx in split_list:
+            sample = dataset["samples"][idx]
+            label_name = sample["label"]
+            #print(label_name)
+
+            # Apply grouping if provided
+            # if label_name in self.grouping:
+            #     label_name = self.grouping[label_name]
+
+            label_id = self.label_to_index(label_name)
+            print("first label_id : ",label_id)
+            frames = sample["threed_pose"]
+            T = len(frames)
+            if T == 0:
+                continue
+            # Frame sampling / padding
+            if T >= self.clip_len:
+                selected_indices = np.linspace(0, T - 1, self.clip_len).astype(int)
+            else:
+                selected_indices = list(range(T)) + [T - 1] * (self.clip_len - T)
+
+            pose3d_clip = []
+            for i in selected_indices:
+                #print(i, T)
+                frame = frames[i]["keypoints"]
+                kp_3d = np.array([
+                    [frame[str(j)]["x"], frame[str(j)]["y"], frame[str(j)]["z"]]
+                    for j in range(17)
+                ])
+                pose3d_clip.append(kp_3d)
+
+            pose3d_clip = np.stack(pose3d_clip)  # (T, 17, 3)
+            #dummy_person = np.zeros_like(pose3d_clip)
+            #combined = np.stack([pose3d_clip, dummy_person], axis=0)  # (2, T, 17, 3)
+            print("second label_id : ",label_id)
+            all_data.append((pose3d_clip, label_id))
+
+        print(f"Loaded {len(all_data)} samples for split ")
+        return all_data
+
+    def label_to_index(self, label):
+        label_map = {
+            # takeoff / entry
+            "takeoff": "takeoff",
+
+            # turning maneuvers
+            "cutback": "turn",
+            "roundhouse_cutback": "turn",
+            "snap": "turn",
+            "basic_turn": "turn",
+            "bottom_turn": "turn",
+            "roller": "turn",
+            # aerials
+            "air_360": "aerial",
+            "air_reversed": "aerial",
+            "kick": "aerial",
+
+            # nose riding
+            "hang_five": "nose_riding",
+            "hang_ten": "nose_riding",
+
+            # tricks
+            #"tail_slide": "trick",
+
+            # classic maneuvers
+            #"roller": "maneuver",
+            "floater": "maneuver",
+            "barrel": "maneuver",
+            "tail_slide": "maneuver",
+            # wipeout stays alone
+            "wipeout": "wipeout",
+        }
+
+        grouped_label = label_map[label]
+        #print(grouped_label)
+        grouped_index = {
+            "takeoff": 0,
+            "turn": 1,
+            "aerial": 2,
+            "nose_riding": 3,
+            "maneuver": 4,
+            "wipeout": 5,
+        }
+
+        #print(grouped_index[grouped_label])
+
+        return grouped_index[grouped_label]
+
+    def index_to_label(self, index):
+        index_map = {
+            0: "takeoff",
+            1: "turn",
+            2: "aerial",
+            3: "nose_riding",
+            4: "maneuver",
+            5: "wipeout"
+        }
+        return index_map[index]
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        input_tensor, label = self.samples[idx]
+        return torch.tensor(input_tensor, dtype=torch.float32), torch.tensor(label, dtype=torch.long)

@@ -12,7 +12,7 @@ import random
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from lib.data.dataset_surf import SurfActionDataset
+from lib.data.dataset_surf import SurfActionDataset, SurfActionDatasetV2
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.metrics import classification_report, accuracy_score
 from torch.utils.data import DataLoader, random_split
@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument('-freq', '--print_freq', default=100)
     parser.add_argument('-dr','--data_root', default='lib/data/processed_videos', type=str, metavar='PATH', help='root directory of the dataset')
     parser.add_argument('-ms', '--selection', default='latest_epoch.bin', type=str, metavar='FILENAME', help='checkpoint to finetune (file name)')
+    parser.add_argument('--clip_len', default=50, type=int, help='Number of frames per clip')
     opts = parser.parse_args()
     return opts
 
@@ -155,29 +156,40 @@ def train_with_config(args, opts):
           'persistent_workers': True
     }
     
-    with open("lib/data/splits/train_list_0.5.txt") as f:
-        list_unshuffled = [line.strip() for line in f]
-        train_list = random.sample(list_unshuffled,k=len(list_unshuffled))
+    # with open("lib/data/splits/train_list_0.5.txt") as f:
+    #     list_unshuffled = [line.strip() for line in f]
+    #     train_list = random.sample(list_unshuffled,k=len(list_unshuffled))
 
-    with open("lib/data/splits/test_list_0.5.txt") as f:
-        list_unshuffled = [line.strip() for line in f]
-        full_test_list = random.sample(list_unshuffled,k=len(list_unshuffled))
+    # with open("lib/data/splits/test_list_0.5.txt") as f:
+    #     list_unshuffled = [line.strip() for line in f]
+    #     full_test_list = random.sample(list_unshuffled,k=len(list_unshuffled))
 
-    # Split test_list into validation and test (50/50)
-    split_index = len(full_test_list) // 2
-    val_list = full_test_list[:split_index]
-    test_list = full_test_list[split_index:]
+    # # Split test_list into validation and test (50/50)
+    # split_index = len(full_test_list) // 2
+    # val_list = full_test_list[:split_index]
+    # test_list = full_test_list[split_index:]
+
+    with open(args.data_root, "r") as f:
+        dataset = json.load(f)
+
+    num_samples = len(dataset["samples"])
+    indices = list(range(num_samples))
+
+    # Example simple split (80/10/10)
+    train_list = indices[: int(0.5 * num_samples)]
+    #val_list = indices[int(0.8 * num_samples): int(0.9 * num_samples)]
+    test_list = indices[int(0.5 * num_samples):]
 
     # Create datasets
 
-    data_root = args.data_root
-    train_dataset = SurfActionDataset(data_root=data_root, split_list=train_list, clip_len=args.clip_len)
-    val_dataset = SurfActionDataset(data_root=data_root, split_list=val_list, clip_len=args.clip_len)
-    test_dataset = SurfActionDataset(data_root=data_root, split_list=test_list, clip_len=args.clip_len)
+    # Create datasets
+    train_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=train_list, clip_len=args.clip_len)
+    #val_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=val_list, clip_len=args.clip_len)
+    test_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=test_list, clip_len=args.clip_len)
 
     # Create loaders
     train_loader = DataLoader(train_dataset, **trainloader_params)
-    val_loader = DataLoader(val_dataset, **testloader_params)  # Usually same params as test
+    #val_loader = DataLoader(val_dataset, **testloader_params)
     test_loader = DataLoader(test_dataset, **testloader_params)
 
     chk_filename = os.path.join(opts.checkpoint, "latest_epoch.bin")
@@ -318,27 +330,28 @@ def train_basic_class():
           'persistent_workers': True
     }
 
-    with open("lib/data/splits/train_list_0.5.txt") as f:
-        train_list = [line.strip() for line in f]
+    with open(args.data_root, "r") as f:
+        dataset = json.load(f)
 
-    with open("lib/data/splits/test_list_0.5.txt") as f:
-        full_test_list = [line.strip() for line in f]
+    num_samples = len(dataset["samples"])
+    indices = list(range(num_samples))
 
-    # Split test_list into validation and test (50/50)
-    split_index = len(full_test_list) // 2
-    val_list = full_test_list[:split_index]
-    test_list = full_test_list[split_index:]
+    # Example simple split (80/10/10)
+    train_list = indices[: int(0.5 * num_samples)]
+    #val_list = indices[int(0.8 * num_samples): int(0.9 * num_samples)]
+    test_list = indices[int(0.5 * num_samples):]
 
     # Create datasets
-    train_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=train_list, clip_len=args.clip_len)
-    val_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=val_list, clip_len=args.clip_len)
-    test_dataset = SurfActionDataset(data_root="lib/data/processed_videos", split_list=test_list, clip_len=args.clip_len)
+
+    # Create datasets
+    train_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=train_list, clip_len=args.clip_len)
+    #val_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=val_list, clip_len=args.clip_len)
+    test_dataset = SurfActionDatasetV2(json_path=args.data_root, split_list=test_list, clip_len=args.clip_len)
 
     # Create loaders
     train_loader = DataLoader(train_dataset, **trainloader_params)
-    val_loader = DataLoader(val_dataset, **testloader_params)  # Usually same params as test
+    #val_loader = DataLoader(val_dataset, **testloader_params)
     test_loader = DataLoader(test_dataset, **testloader_params)
-
 
     X_train, y_train = [], []
     X_test, y_test = [], []
@@ -366,7 +379,9 @@ def train_basic_class():
             
             
             #y_pred.append()
-    
+    print("Labels in training set:", set(y_train))
+    print("Labels in test set:", set(y_test))
+
     X_train = np.stack(X_train)
     X_test = np.stack(X_test)
 
@@ -390,13 +405,13 @@ def train_basic_class():
                 "min_samples_leaf": [1, 2]
             }
         },
-        "SVM": {
-            "model": SVC(probability=True),
-            "params": {
-                "C": [0.1, 1, 10],
-                "kernel": ["linear", "rbf"]
-            }
-        },
+        # "SVM": {
+        #     "model": SVC(probability=True),
+        #     "params": {
+        #         "C": [0.1, 1, 10],
+        #         "kernel": ["linear", "rbf"]
+        #     }
+        #},
         "MLP": {
             "model": MLPClassifier(max_iter=1000, random_state=42),
             "params": {
@@ -504,8 +519,9 @@ def evaluate_model(model, test_loader, device, class_names=None,name='conf_matri
 
 
 if __name__ == "__main__":
-    opts = parse_args()
-    print(opts)
-    args = get_config(opts.config)
+    args = parse_args()
+    #print(opts)
+    #args = get_config(opts.config)
 
-    train_with_config(args, opts)
+    # train_with_config(args, opts)
+    train_basic_class()
