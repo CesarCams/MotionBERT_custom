@@ -132,7 +132,7 @@ class SurfActionDatasetV2(Dataset):
             #     label_name = self.grouping[label_name]
 
             label_id = self.label_to_index(label_name)
-            print("first label_id : ",label_id)
+            #first label_id : ",label_id)
             frames = sample["threed_pose"]
             T = len(frames)
             if T == 0:
@@ -156,7 +156,7 @@ class SurfActionDatasetV2(Dataset):
             pose3d_clip = np.stack(pose3d_clip)  # (T, 17, 3)
             dummy_person = np.zeros_like(pose3d_clip)
             combined = np.stack([pose3d_clip, dummy_person], axis=0)  # (2, T, 17, 3)
-            print("second label_id : ",label_id)
+            #print("second label_id : ",label_id)
             all_data.append((combined, label_id))
 
         print(f"Loaded {len(all_data)} samples for split ")

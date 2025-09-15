@@ -33,6 +33,7 @@ from lib.model.loss import *
 from lib.data.dataset_action import NTURGBD
 from lib.model.model_action import ActionNet
 from sklearn.preprocessing import StandardScaler
+import joblib
 
 
 random.seed(0)
@@ -113,6 +114,7 @@ def train_with_config(args, opts):
         if opts.resume or opts.evaluate:
             pass
         else:
+            print("Finetuning") 
             chk_filename = os.path.join(opts.pretrained, opts.selection)
             print('Loading backbone', chk_filename)
             checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)['model_pos']
@@ -365,7 +367,7 @@ def train_basic_class():
 
             y_train.append(label[i].item())
 
-    
+    print("Shape of first training sample:", X_train[0].shape)
     for sample_input, label in tqdm(test_loader):
         #for i in range(sample_input.size(0)):
             #if label[i].item()==3:
@@ -473,13 +475,21 @@ def train_basic_class():
     class_names = [f"Class {i}" for i in labels]
 
     # --- Option 1: Pretty Confusion Matrix with seaborn ---
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names)
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
-    plt.title("Confusion Matrix")
-    plt.tight_layout()
-    plt.show()
+    # plt.figure(figsize=(8, 6))
+    # sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names)
+    # plt.xlabel("Predicted Label")
+    # plt.ylabel("True Label")
+    # plt.title("Confusion Matrix")
+    # plt.tight_layout()
+    # plt.show()
+    # Save the best model to a file
+    best_model_filename = "best_model.pth"
+    torch.save(best_model, "best_model.pth")
+
+    print(f"✅ Best model saved to {best_model_filename}")
+
+    # To load the model later, you can use:
+    # loaded_model = joblib.load(best_model_filename)
 
 def evaluate_model(model, test_loader, device, class_names=None,name='conf_matrix.png'):
     model.eval()
@@ -513,15 +523,15 @@ def evaluate_model(model, test_loader, device, class_names=None,name='conf_matri
     plt.ylabel("True")
     plt.title("Confusion Matrix")
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
     return acc, cm
 
 
 if __name__ == "__main__":
     opts = parse_args()
-    #print(opts)
+    # #print(opts)
     args = get_config(opts.config)
 
-    train_with_config(args, opts)
+    # train_with_config(args, opts)
     train_basic_class()

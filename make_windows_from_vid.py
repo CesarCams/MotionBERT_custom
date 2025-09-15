@@ -11,7 +11,7 @@ def make_seq(json_path):
     with open(json_path, 'r') as f:
         json_data = json.load(f)
 
-    frames = json_data["frames"]
+    frames = json_data["threed_pose"]
 
     pose3d_clip = []
 
